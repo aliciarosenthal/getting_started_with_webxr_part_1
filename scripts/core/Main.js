@@ -15,10 +15,10 @@ export default function main() {
     let camera = new THREE.PerspectiveCamera(
         45, //Field of View Angle
         window.innerWidth / window.innerHeight, //Aspect Ratio
-        0.1, //Clipping for things closer than this amount
+        1.1, //Clipping for things closer than this amount
         1000 //Clipping for things farther than this amount
     );
-    camera.position.setY(1.7); //Height of your eyes
+    camera.position.setY(0); //Height of your eyes
     scene.add(camera);
     
     //Create Sphere + Cube
@@ -28,6 +28,13 @@ export default function main() {
         16, //Width segments
         16 //Height segments
     );
+    let newElement= new THREE.DodecahedronGeometry(1);
+
+    let newMaterial = new THREE.MeshLambertMaterial({
+        color: 0x0000FF //BLUE
+    });
+    let newMesh = new THREE.Mesh(newElement, newMaterial);
+    
     let sphereMaterial = new THREE.MeshLambertMaterial({
         color: 0xFF0000 //Red
     });
@@ -37,18 +44,27 @@ export default function main() {
         1.5 * sphereRadius, //Height
         1.5 * sphereRadius //Depth
     );
+    const loader = new THREE.TextureLoader();
     let cubeMaterial = new THREE.MeshLambertMaterial({
-        color: 0x00FF00 //Green
+        //color: 0x00FF00 //Green
+        map: loader.load('img/wall.jpg')
     });
     let cubeMesh = new THREE.Mesh(cubeGeometry, cubeMaterial);
     
     //Group shapes together and add group to the scene
     let shapes = new THREE.Object3D();
+    let newShapes = new THREE.Object3D();
     shapes.add(sphereMesh);
     shapes.add(cubeMesh);
-    shapes.position.setY(1.7); //Place at eye level
+    
+    shapes.position.setY(0); //Place at eye level
     shapes.position.setZ(-10); //Move shape forward so we can see it
     scene.add(shapes);
+    newShapes.add(newMesh);
+    newShapes.position.setY(-2); //Place at eye level
+    newShapes.position.setX(2);
+    newShapes.position.setZ(-10);
+    scene.add(newShapes);
     
     //Add light to the scene
     let light = new THREE.PointLight();
@@ -73,6 +89,7 @@ export default function main() {
     }
     
     window.addEventListener('resize', onResize);
+    //this code prevent the scroll
     window.addEventListener('wheel', function(event) {
         event.preventDefault();
     }, {passive: false, capture: true});

@@ -36,12 +36,12 @@ export default class Main {
 
     _createUser() {
         this._camera = new THREE.PerspectiveCamera(
-            45, //Field of View Angle
+            90, //Field of View Angle
             window.innerWidth / window.innerHeight, //Aspect Ratio
             0.1, //Clipping for things closer than this amount
             1000 //Clipping for things farther than this amount
         );
-        this._camera.position.setY(1.7); //Height of your eyes
+        this._camera.position.setY(1.9); //Height of your eyes
         this._scene.add(this._camera);
     }
 
@@ -71,7 +71,7 @@ export default class Main {
         this._shapes = new THREE.Object3D();
         this._shapes.add(sphereMesh);
         this._shapes.add(cubeMesh);
-        this._shapes.position.setY(1.7); //Place at eye level
+        this._shapes.position.setY(1.9); //Place at eye level
         this._shapes.position.setZ(-10); //Move shape forward so we can see it
         this._scene.add(this._shapes);
 

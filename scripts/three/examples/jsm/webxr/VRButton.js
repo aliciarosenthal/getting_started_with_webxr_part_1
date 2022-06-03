@@ -1,112 +1,172 @@
-import * as THREE from '../three/build/three.module.js';
-import { VRButton } from '../three/examples/jsm/webxr/VRButton.js'; // XR 
+/**
+ * @author mrdoob / http://mrdoob.com
+ * @author Mugen87 / https://github.com/Mugen87
+ */
 
-export default class Main {
-    constructor() {
-        this._renderer;
-        this._scene;
-        this._camera;
-        this._shapes;
-        this._clock = new THREE.Clock();
-        this._container = document.querySelector('#container');
+var VRButton = {
 
-        this._createRenderer();
-        this._createScene();
-        this._createUser();
-        this._createAssets();
-        this._addEventListeners();
+	createButton: function ( renderer, options ) {
 
-        this._t = 0; // Oscillaltions
+		if ( options && options.referenceSpaceType ) {
 
-        this._renderer.setAnimationLoop(() => { this._update() });
-    }
+			renderer.xr.setReferenceSpaceType( options.referenceSpaceType );
 
-    _createRenderer() {
-        this._renderer = new THREE.WebGLRenderer({ antialias : true });
-        this._renderer.setSize(window.innerWidth, window.innerHeight);
-        this._renderer.xr.enabled = true; // XR
-        this._container.appendChild(this._renderer.domElement); 
-        this._container.appendChild(VRButton.createButton(this._renderer)); // XR
+		}
 
-    }
+		function showEnterVR( /*device*/ ) {
 
-    _createScene() {
-        this._scene = new THREE.Scene();
-    }
+			var currentSession = null;
 
-    _createUser() {
-        this._camera = new THREE.PerspectiveCamera(
-            45, //Field of View Angle
-            window.innerWidth / window.innerHeight, //Aspect Ratio
-            0.1, //Clipping for things closer than this amount
-            1000 //Clipping for things farther than this amount
-        );
-        this._camera.position.setY(1.7); //Height of your eyes
-        this._scene.add(this._camera);
-    }
+			function onSessionStarted( session ) {
 
-    _createAssets() {
-        //Create Sphere + Cube
-        let sphereRadius = 1;
-        let sphereGeometry = new THREE.SphereBufferGeometry(
-            sphereRadius,
-            16, //Width segments
-            16 //Height segments
-        );
-        let sphereMaterial = new THREE.MeshLambertMaterial({
-            color: 0xFF0000 //Red
-        });
-        let sphereMesh = new THREE.Mesh(sphereGeometry, sphereMaterial);
-        let cubeGeometry = new THREE.BoxBufferGeometry(
-            1.5 * sphereRadius, //Width
-            1.5 * sphereRadius, //Height
-            1.5 * sphereRadius //Depth
-        );
-        let cubeMaterial = new THREE.MeshLambertMaterial({
-            color: 0x00FF00 //Green
-        });
-        let cubeMesh = new THREE.Mesh(cubeGeometry, cubeMaterial);
+				session.addEventListener( 'end', onSessionEnded );
 
-        //Group shapes together and add group to the scene
-        this._shapes = new THREE.Object3D();
-        this._shapes.add(sphereMesh);
-        this._shapes.add(cubeMesh);
-        this._shapes.position.setY(1.7); //Place at eye level
-        this._shapes.position.setZ(-10); //Move shape forward so we can see it
-        this._scene.add(this._shapes);
+				renderer.xr.setSession( session );
+				button.textContent = 'EXIT VR';
 
-        //Add light to the scene
-        let light = new THREE.PointLight();
-        light.position.setY(2);
-        this._scene.add(light);
-    }
+				currentSession = session;
 
-    _addEventListeners() {
-        window.addEventListener('resize', () => { this._onResize() });
-        window.addEventListener('wheel', function(event) {
-                    event.preventDefault();
-        }, {passive: false, capture: true});
-        
-    }
+			}
 
-    _onResize () {
-        this._renderer.setSize(window.innerWidth, window.innerHeight);
-        this._camera.aspect = window.innerWidth / window.innerHeight;
-        this._camera.updateProjectionMatrix();
-    }
+			function onSessionEnded( /*event*/ ) {
 
-    _update() {
-        this._t += 0.01;
-        let timeDelta = this._clock.getDelta();
+				currentSession.removeEventListener( 'end', onSessionEnded );
 
-        if (this._t > 2 * Math.PI)
-            this._t = 0;
-        else
-            if (Math.cos (this._t)>0)
-                this._shapes.translateX(0.01)
-            else
-                this._shapes.translateX(-0.01)
+				button.textContent = 'ENTER VR';
 
-        this._renderer.render(this._scene, this._camera);
-    }
-}
+				currentSession = null;
+
+			}
+
+			//
+
+			button.style.display = '';
+
+			button.style.cursor = 'pointer';
+			button.style.left = 'calc(50% - 50px)';
+			button.style.width = '100px';
+
+			button.textContent = 'ENTER VR';
+
+			button.onmouseenter = function () {
+
+				button.style.opacity = '1.0';
+
+			};
+
+			button.onmouseleave = function () {
+
+				button.style.opacity = '0.5';
+
+			};
+
+			button.onclick = function () {
+
+				if ( currentSession === null ) {
+
+					// WebXR's requestReferenceSpace only works if the corresponding feature
+					// was requested at session creation time. For simplicity, just ask for
+					// the interesting ones as optional features, but be aware that the
+					// requestReferenceSpace call will fail if it turns out to be unavailable.
+					// ('local' is always available for immersive sessions and doesn't need to
+					// be requested separately.)
+
+					var sessionInit = { optionalFeatures: [ 'local-floor', 'bounded-floor' ] };
+					navigator.xr.requestSession( 'immersive-vr', sessionInit ).then( onSessionStarted );
+
+				} else {
+
+					currentSession.end();
+
+				}
+
+			};
+
+		}
+
+		function disableButton() {
+
+			button.style.display = '';
+
+			button.style.cursor = 'auto';
+			button.style.left = 'calc(50% - 75px)';
+			button.style.width = '150px';
+
+			button.onmouseenter = null;
+			button.onmouseleave = null;
+
+			button.onclick = null;
+
+		}
+
+		function showWebXRNotFound() {
+
+			disableButton();
+
+			button.textContent = 'VR NOT SUPPORTED';
+
+		}
+
+		function stylizeElement( element ) {
+
+			element.style.position = 'absolute';
+			element.style.bottom = '20px';
+			element.style.padding = '12px 6px';
+			element.style.border = '1px solid #fff';
+			element.style.borderRadius = '4px';
+			element.style.background = 'rgba(0,0,0,0.1)';
+			element.style.color = '#fff';
+			element.style.font = 'normal 13px sans-serif';
+			element.style.textAlign = 'center';
+			element.style.opacity = '0.5';
+			element.style.outline = 'none';
+			element.style.zIndex = '999';
+
+		}
+
+		if ( 'xr' in navigator ) {
+
+			var button = document.createElement( 'button' );
+			button.style.display = 'none';
+
+			stylizeElement( button );
+
+			navigator.xr.isSessionSupported( 'immersive-vr' ).then( function ( supported ) {
+
+				supported ? showEnterVR() : showWebXRNotFound();
+
+			} );
+
+			return button;
+
+		} else {
+
+			var message = document.createElement( 'a' );
+
+			if ( window.isSecureContext === false ) {
+
+				message.href = document.location.href.replace( /^http:/, 'https:' );
+				message.innerHTML = 'WEBXR NEEDS HTTPS'; // TODO Improve message
+
+			} else {
+
+				message.href = 'https://immersiveweb.dev/';
+				message.innerHTML = 'WEBXR NOT AVAILABLE';
+
+			}
+
+			message.style.left = 'calc(50% - 90px)';
+			message.style.width = '180px';
+			message.style.textDecoration = 'none';
+
+			stylizeElement( message );
+
+			return message;
+
+		}
+
+	}
+
+};
+
+export { VRButton };

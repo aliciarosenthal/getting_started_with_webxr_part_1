@@ -1,3 +1,3 @@
-import main from './Main.js';
+import main from './Main_vr_osci.js';
 
-main();
+new main();
